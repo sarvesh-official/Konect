@@ -32,7 +32,20 @@ a, button, [role="button"], input[type="submit"], select, label[for] {
   display: block;
 }
 
-/* All buttons should show pointer */
-button:not(:disabled) {
-  cursor: pointer;
+/* Force custom cursors everywhere */
+*, *::before, *::after {
+  cursor: url("/cursor-default.svg") 2 1, auto;
+}
+
+a, button, [role="button"], input[type="submit"], select,
+label[for], .cursor-pointer, [onclick] {
+  cursor: url("/cursor-pointer.svg") 2 1, pointer !important;
+}
+
+button:disabled {
+  cursor: url("/cursor-default.svg") 2 1, auto !important;
+}
+
+input, textarea {
+  cursor: url("/cursor-default.svg") 2 1, text;
 }

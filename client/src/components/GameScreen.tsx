@@ -4,6 +4,7 @@ import { socket } from "../socket";
 import type { ChatMessage, NearbyPlayer } from "../types";
 import ChatSidebar from "./ChatSidebar";
 import ConnectionModal from "./ConnectionModal";
+import MusicPlayer from "./MusicPlayer";
 
 function loadChatHistory(name: string): Map<string, ChatMessage[]> {
   try {
@@ -217,6 +218,9 @@ export default function GameScreen({ name, variant }: Props) {
           SPRINT
         </button>
       </div>
+
+      {/* Music toggle */}
+      <MusicPlayer />
 
       {/* Connection modal */}
       {showModal && (
