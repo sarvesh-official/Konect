@@ -20,9 +20,19 @@ body {
   background-color: #050507;
   color: #f2f2f2;
   font-family: Inter, system-ui, -apple-system, sans-serif;
+  cursor: url("/cursor-default.svg") 4 2, auto;
+}
+
+a, button, [role="button"], input[type="submit"], select, label[for] {
+  cursor: url("/cursor-pointer.svg") 9 2, pointer;
 }
 
 /* Pixi canvas fills available space */
 .game-canvas canvas {
   display: block;
+}
+
+/* All buttons should show pointer */
+button:not(:disabled) {
+  cursor: pointer;
 }

@@ -115,3 +115,26 @@ export function pickVariant(name: string): number {
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) | 0;
   return Math.abs(h) % VARIANTS.length;
 }
+
+export const VARIANT_COUNT = VARIANTS.length;
+
+export type VariantMeta = { label: string; gender: string };
+
+export const VARIANT_META: VariantMeta[] = [
+  { label: "Male — Short Hair", gender: "male" },
+  { label: "Male — Messy Hair", gender: "male" },
+  { label: "Female — Long Hair", gender: "female" },
+  { label: "Female — Bob Cut", gender: "female" },
+];
+
+/** Generate a preview image (front-facing idle frame) for a variant */
+export async function generatePreview(variantIdx: number): Promise<string> {
+  const v = VARIANTS[variantIdx];
+  const canvas = await compositeLayers(v.gender, v.walkLayers);
+  // Extract frame: row 2 (facing down), col 0 (idle)
+  const preview = document.createElement("canvas");
+  preview.width = FW;
+  preview.height = FH;
+  preview.getContext("2d")!.drawImage(canvas, 0, 2 * FH, FW, FH, 0, 0, FW, FH);
+  return preview.toDataURL();
+}

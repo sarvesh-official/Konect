@@ -3,11 +3,11 @@ import JoinScreen from "./components/JoinScreen";
 import GameScreen from "./components/GameScreen";
 
 export default function App() {
-  const [name, setName] = useState<string | null>(null);
+  const [session, setSession] = useState<{ name: string; variant: number } | null>(null);
 
-  if (!name) {
-    return <JoinScreen onJoin={(n) => setName(n)} />;
+  if (!session) {
+    return <JoinScreen onJoin={(name, variant) => setSession({ name, variant })} />;
   }
 
-  return <GameScreen name={name} />;
+  return <GameScreen name={session.name} variant={session.variant} />;
 }

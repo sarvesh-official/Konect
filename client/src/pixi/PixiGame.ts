@@ -2,7 +2,7 @@ import { Application, Container } from "pixi.js";
 import { Player } from "./Player";
 import { World } from "./World";
 import { socket } from "../socket";
-import { loadAllVariants, pickVariant, type CharacterFrames } from "./SpriteLoader";
+import { loadAllVariants, type CharacterFrames } from "./SpriteLoader";
 import { collidesWithObject, findNearbySeat, type ObjectDef } from "./WorldObjects";
 import type { NearbyPlayer, PlayerState } from "../types";
 
@@ -117,7 +117,7 @@ export class PixiGame {
     this.worldContainer.y = cy;
   }
 
-  async mount(container: HTMLElement, name: string) {
+  async mount(container: HTMLElement, name: string, selfVariant: number = 0) {
     const app = new Application();
     const [variants] = await Promise.all([
       loadAllVariants(),
@@ -151,7 +151,7 @@ export class PixiGame {
     this.setupGameLoop();
 
     socket.connect();
-    socket.emit("join", { name });
+    socket.emit("join", { name, variant: selfVariant });
   }
 
   destroy() {
@@ -213,7 +213,8 @@ export class PixiGame {
 
   private addPlayer(p: PlayerState, isSelf: boolean) {
     if (!this.worldContainer || this.variants.length === 0) return;
-    const frames = this.variants[pickVariant(p.name)];
+    const vi = Math.min(p.variant ?? 0, this.variants.length - 1);
+    const frames = this.variants[vi];
     const player = new Player({ id: p.id, name: p.name, mapX: MAP_X, mapY: MAP_Y, x: p.x, y: p.y, isSelf, frames });
     player.addToStage(this.worldContainer);
     this.players.set(p.id, player);
@@ -259,12 +260,30 @@ export class PixiGame {
 
         // Only enforce collision if we're NOT already stuck inside an object.
         // If current position already collides, let the player move out freely.
+        // Furniture collision
         const alreadyInside = collidesWithObject(me.x, me.y, me.radius);
         if (!alreadyInside) {
           if (collidesWithObject(px, me.y, me.radius)) px = me.x;
           if (collidesWithObject(me.x, py, me.radius)) py = me.y;
           if (collidesWithObject(px, py, me.radius)) { px = me.x; py = me.y; }
         }
+
+        // Player-to-player collision
+        const colRadius = me.radius * 2;
+        this.players.forEach((other, id) => {
+          if (id === this.selfId) return;
+          const dx = px - other.x;
+          const dy = py - other.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < colRadius && dist > 0) {
+            // Push back along the collision axis
+            const overlap = colRadius - dist;
+            const nx = dx / dist;
+            const ny = dy / dist;
+            px += nx * overlap;
+            py += ny * overlap;
+          }
+        });
 
         me.setPosition(px, py);
         socket.emit("player_move", { x: px, y: py });

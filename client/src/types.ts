@@ -3,6 +3,7 @@ export type PlayerState = {
   name: string;
   x: number;
   y: number;
+  variant: number;
 };
 
 export type ChatMessage = {

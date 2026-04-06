@@ -34,6 +34,7 @@ type PlayerState = {
   name: string;
   x: number;
   y: number;
+  variant: number;
 };
 
 const players = new Map<string, PlayerState>();
@@ -41,7 +42,7 @@ const players = new Map<string, PlayerState>();
 io.on("connection", (socket: Socket) => {
   console.log("User connected:", socket.id);
 
-  socket.on("join", async ({ name }: { name: string }) => {
+  socket.on("join", async ({ name, variant = 0 }: { name: string; variant?: number }) => {
     const spawnX = 100 + Math.random() * 700;
     const spawnY = 100 + Math.random() * 400;
 
@@ -50,6 +51,7 @@ io.on("connection", (socket: Socket) => {
       name,
       x: spawnX,
       y: spawnY,
+      variant,
     };
 
     players.set(socket.id, player);

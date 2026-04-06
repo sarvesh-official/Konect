@@ -5,9 +5,16 @@ import type { ChatMessage, NearbyPlayer } from "../types";
 import ChatSidebar from "./ChatSidebar";
 import ConnectionModal from "./ConnectionModal";
 
-type Props = { name: string };
+function loadChatHistory(name: string): Map<string, ChatMessage[]> {
+  try {
+    const stored = localStorage.getItem(`konect_chats_${name}`);
+    return stored ? new Map(JSON.parse(stored)) : new Map();
+  } catch { return new Map(); }
+}
 
-export default function GameScreen({ name }: Props) {
+type Props = { name: string; variant: number };
+
+export default function GameScreen({ name, variant }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<PixiGame | null>(null);
 
@@ -18,9 +25,18 @@ export default function GameScreen({ name }: Props) {
   const [canSit, setCanSit] = useState(false);
   const [isSitting, setIsSitting] = useState(false);
 
-  // Per-player message history (survives disconnect/reconnect)
-  const chatHistory = useRef<Map<string, ChatMessage[]>>(new Map());
+  // Per-player message history — loaded from localStorage, survives refresh
+  const chatHistory = useRef<Map<string, ChatMessage[]>>(loadChatHistory(name));
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+
+  const saveHistory = () => {
+    try {
+      localStorage.setItem(
+        `konect_chats_${name}`,
+        JSON.stringify(Array.from(chatHistory.current.entries())),
+      );
+    } catch { /* storage full */ }
+  };
 
   const onNearby = useCallback((p: NearbyPlayer) => setNearbyPlayer(p), []);
   const onLeaveProximity = useCallback(() => { setNearbyPlayer(null); setDismissed(null); }, []);
@@ -31,7 +47,7 @@ export default function GameScreen({ name }: Props) {
     if (!containerRef.current) return;
     const game = new PixiGame({ onNearby, onLeaveProximity, onPlayersChanged, onSeatNearby });
     gameRef.current = game;
-    game.mount(containerRef.current, name);
+    game.mount(containerRef.current, name, variant);
 
     socket.on("chat_message", (msg: ChatMessage) => {
       const history = chatHistory.current;
@@ -47,7 +63,7 @@ export default function GameScreen({ name }: Props) {
     });
 
     return () => { socket.off("chat_message"); socket.off("chat_history"); game.destroy(); };
-  }, [name, onNearby, onLeaveProximity, onPlayersChanged, onSeatNearby]);
+  }, [name, variant, onNearby, onLeaveProximity, onPlayersChanged, onSeatNearby]);
 
   const handleSit = () => {
     gameRef.current?.toggleSit();
@@ -68,9 +84,9 @@ export default function GameScreen({ name }: Props) {
   const handleIgnore = () => { if (nearbyPlayer) { setDismissed(nearbyPlayer.id); setNearbyPlayer(null); } };
 
   const handleDisconnect = () => {
-    // Save current messages to history before closing
     if (connectedPlayer) {
       chatHistory.current.set(connectedPlayer.id, [...messages]);
+      saveHistory();
     }
     setConnectedPlayer(null);
     setMessages([]);
@@ -84,6 +100,7 @@ export default function GameScreen({ name }: Props) {
     const existing = history.get(connectedPlayer.id) ?? [];
     existing.push(msg);
     history.set(connectedPlayer.id, existing);
+    saveHistory();
     setMessages((prev) => [...prev, msg]);
   };
 
@@ -100,7 +117,7 @@ export default function GameScreen({ name }: Props) {
       <div className="pointer-events-none fixed left-0 top-0 z-10 flex w-full items-center justify-between px-4 py-2 sm:px-5 sm:py-3">
         <div className="flex items-center gap-2 sm:gap-3">
           <img src="/favicon.svg" alt="" className="h-6 w-6 sm:h-8 sm:w-8" />
-          <span className="text-xs font-bold tracking-widest text-snow/70 sm:text-sm">KONECT</span>
+          <span className="text-xs font-bold tracking-widest text-snow/70 sm:text-sm">ONECT</span>
         </div>
         <div className="flex items-center gap-2 rounded-full border border-charcoal bg-carbon/80 px-2.5 py-1 backdrop-blur sm:px-3 sm:py-1.5">
           <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-signal" />
