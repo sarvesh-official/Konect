@@ -1,12 +1,36 @@
 import { useRef, useState, useEffect } from "react";
 
 const TRACKS = ["/music/lofi1.mp3", "/music/lofi2.mp3"];
+const MUSIC_PREF_KEY = "konect_music_enabled";
+
+function readMusicPreference(): boolean {
+  try {
+    const raw = localStorage.getItem(MUSIC_PREF_KEY);
+    if (raw === null) return true; // first-time users default to music on
+    return raw === "true";
+  } catch {
+    return true;
+  }
+}
+
+function writeMusicPreference(enabled: boolean) {
+  try {
+    localStorage.setItem(MUSIC_PREF_KEY, String(enabled));
+  } catch {
+    // ignore storage errors
+  }
+}
 
 export default function MusicPlayer() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [playing, setPlaying] = useState(false);
+  const [playing, setPlaying] = useState<boolean>(() => readMusicPreference());
   const [trackIdx, setTrackIdx] = useState(0);
   const triedAutoplay = useRef(false);
+  const playingRef = useRef(playing);
+
+  useEffect(() => {
+    playingRef.current = playing;
+  }, [playing]);
 
   useEffect(() => {
     const audio = new Audio(TRACKS[0]);
@@ -14,18 +38,22 @@ export default function MusicPlayer() {
     audio.volume = 0.3;
     audioRef.current = audio;
 
-    audio.addEventListener("ended", () => {
+    const onEnded = () => {
       setTrackIdx((prev) => {
         const next = (prev + 1) % TRACKS.length;
         audio.src = TRACKS[next];
-        audio.play();
+        if (playingRef.current) {
+          audio.play().catch(() => {});
+        }
         return next;
       });
-    });
+    };
+    audio.addEventListener("ended", onEnded);
 
     // Autoplay on first user interaction (browsers block autoplay without a gesture)
     const autoplay = () => {
       if (triedAutoplay.current) return;
+      if (!playingRef.current) return;
       triedAutoplay.current = true;
       audio.play().then(() => setPlaying(true)).catch(() => {});
       window.removeEventListener("click", autoplay);
@@ -40,6 +68,7 @@ export default function MusicPlayer() {
     return () => {
       audio.pause();
       audio.src = "";
+      audio.removeEventListener("ended", onEnded);
       window.removeEventListener("click", autoplay);
       window.removeEventListener("keydown", autoplay);
       window.removeEventListener("touchstart", autoplay);
@@ -52,11 +81,14 @@ export default function MusicPlayer() {
 
     if (playing) {
       audio.pause();
+      writeMusicPreference(false);
+      setPlaying(false);
     } else {
       audio.src = TRACKS[trackIdx];
-      audio.play();
+      audio.play().catch(() => {});
+      writeMusicPreference(true);
+      setPlaying(true);
     }
-    setPlaying(!playing);
   };
 
   return (

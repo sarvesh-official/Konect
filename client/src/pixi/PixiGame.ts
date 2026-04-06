@@ -12,6 +12,7 @@ const MAP_Y = 20;
 const AREA_W = 1100;
 const AREA_H = 620;
 const SEAT_RANGE = 50;
+const DOG_VARIANT_COUNT = 4;
 
 export type OnlinePlayer = { id: string; name: string; isSelf: boolean };
 
@@ -41,6 +42,12 @@ export class PixiGame {
 
   constructor(private callbacks: Callbacks) {}
 
+  private hashString(value: string): number {
+    let h = 0;
+    for (let i = 0; i < value.length; i++) h = (h * 31 + value.charCodeAt(i)) | 0;
+    return Math.abs(h);
+  }
+
   setChatFocused(focused: boolean) { this.chatFocused = focused; }
   setKey(key: string, down: boolean) { this.keys[key] = down; }
 
@@ -48,7 +55,10 @@ export class PixiGame {
     if (!this.selfId || !this.dog) return;
     const me = this.players.get(this.selfId);
     if (!me) return;
-    if (this.dog.isNear(me.x, me.y)) this.dog.pet();
+    if (this.dog.isNear(me.x, me.y)) {
+      me.faceToward(this.dog.x, this.dog.y);
+      this.dog.pet();
+    }
   }
 
   toggleSit() {
@@ -150,8 +160,9 @@ export class PixiGame {
 
     new World(MAP_X, MAP_Y, AREA_W, AREA_H).addToStage(wc);
 
-    // Office dog
-    this.dog = new Dog(MAP_X, MAP_Y, AREA_W, AREA_H);
+    // Office dog (stable variant per user)
+    const dogVariant = this.hashString(name) % DOG_VARIANT_COUNT;
+    this.dog = new Dog(MAP_X, MAP_Y, AREA_W, AREA_H, dogVariant);
     this.dog.addToStage(wc);
 
     // Recalc on resize

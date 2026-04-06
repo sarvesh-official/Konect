@@ -14,6 +14,7 @@ type PlayerOptions = {
 
 const SELF_COLOR = 0x00d992;
 const OTHER_COLOR = 0xfb565b;
+const GROUND_Y = 12;
 
 export class Player {
   static readonly RADIUS = 16;
@@ -60,12 +61,13 @@ export class Player {
     }
 
     const shadow = new Graphics();
-    shadow.ellipse(0, 10, 14, 5);
-    shadow.fill({ color: 0x000000, alpha: 0.35 });
+    shadow.ellipse(0, GROUND_Y + 1, 12, 4.5);
+    shadow.fill({ color: 0x000000, alpha: 0.3 });
     this.container.addChild(shadow);
 
     this.sprite = new AnimatedSprite(frames.walk[DIR.DOWN]);
-    this.sprite.anchor.set(0.5, 0.7);
+    this.sprite.anchor.set(0.5, 1);
+    this.sprite.y = GROUND_Y;
     this.sprite.animationSpeed = 0.15;
     this.sprite.scale.set(0.9);
     this.sprite.currentFrame = 0;
@@ -114,6 +116,24 @@ export class Player {
     this.sprite.textures = this.frames.walk[this.currentDir];
     this.sprite.loop = true;
     this.sprite.animationSpeed = 0.15;
+    this.sprite.stop();
+    this.sprite.currentFrame = 0;
+  }
+
+  faceToward(targetX: number, targetY: number) {
+    const dx = targetX - this.x;
+    const dy = targetY - this.y;
+    if (Math.abs(dx) < 0.001 && Math.abs(dy) < 0.001) return;
+
+    let dir: Direction;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      dir = dx > 0 ? DIR.RIGHT : DIR.LEFT;
+    } else {
+      dir = dy > 0 ? DIR.DOWN : DIR.UP;
+    }
+
+    this.currentDir = dir;
+    this.sprite.textures = this.sitting ? this.frames.sit[dir] : this.frames.walk[dir];
     this.sprite.stop();
     this.sprite.currentFrame = 0;
   }
