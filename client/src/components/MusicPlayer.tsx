@@ -14,7 +14,6 @@ export default function MusicPlayer() {
     audioRef.current = audio;
 
     audio.addEventListener("ended", () => {
-      // Play next track
       setTrackIdx((prev) => {
         const next = (prev + 1) % TRACKS.length;
         audio.src = TRACKS[next];
@@ -45,12 +44,22 @@ export default function MusicPlayer() {
   return (
     <button
       onClick={toggle}
-      className="fixed bottom-3 right-3 z-20 flex items-center gap-2 rounded-lg border border-charcoal bg-carbon/90 px-3 py-2 text-xs backdrop-blur transition hover:bg-emerald-signal/10 sm:bottom-4 sm:right-4"
+      className="fixed bottom-3 right-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-charcoal bg-carbon/90 backdrop-blur transition hover:bg-emerald-signal/10 sm:bottom-4 sm:right-4"
+      title={playing ? "Mute" : "Play music"}
     >
-      <span className="text-base">{playing ? "\u{1F50A}" : "\u{1F507}"}</span>
-      <span className="hidden text-parchment sm:inline">
-        {playing ? "Music On" : "Music Off"}
-      </span>
+      {playing ? (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00d992" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="#00d992" />
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+        </svg>
+      ) : (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b949e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="#8b949e" />
+          <line x1="23" y1="9" x2="17" y2="15" />
+          <line x1="17" y1="9" x2="23" y2="15" />
+        </svg>
+      )}
     </button>
   );
 }
