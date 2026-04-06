@@ -6,6 +6,7 @@ export default function MusicPlayer() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const [trackIdx, setTrackIdx] = useState(0);
+  const triedAutoplay = useRef(false);
 
   useEffect(() => {
     const audio = new Audio(TRACKS[0]);
@@ -22,9 +23,26 @@ export default function MusicPlayer() {
       });
     });
 
+    // Autoplay on first user interaction (browsers block autoplay without a gesture)
+    const autoplay = () => {
+      if (triedAutoplay.current) return;
+      triedAutoplay.current = true;
+      audio.play().then(() => setPlaying(true)).catch(() => {});
+      window.removeEventListener("click", autoplay);
+      window.removeEventListener("keydown", autoplay);
+      window.removeEventListener("touchstart", autoplay);
+    };
+
+    window.addEventListener("click", autoplay);
+    window.addEventListener("keydown", autoplay);
+    window.addEventListener("touchstart", autoplay);
+
     return () => {
       audio.pause();
       audio.src = "";
+      window.removeEventListener("click", autoplay);
+      window.removeEventListener("keydown", autoplay);
+      window.removeEventListener("touchstart", autoplay);
     };
   }, []);
 
@@ -44,7 +62,7 @@ export default function MusicPlayer() {
   return (
     <button
       onClick={toggle}
-      className="fixed bottom-3 right-3 bg-transparent z-20 flex h-10 w-10 items-center justify-center rounded-full border border-charcoal transition sm:bottom-4 sm:right-4"
+      className="fixed bottom-3 right-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-transparent bg-transparent transition sm:bottom-4 sm:right-4"
       title={playing ? "Mute" : "Play music"}
     >
       {playing ? (
