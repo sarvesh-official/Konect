@@ -7,7 +7,6 @@ export type PlayerState = {
 };
 
 export type ChatMessage = {
-  id: string;
   senderName: string;
   message: string;
   timestamp: number;

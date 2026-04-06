@@ -89,21 +89,19 @@ io.on("connection", (socket: Socket) => {
       if (!targetId) return;
 
       const sender = players.get(socket.id);
-      if (!sender) return;
+      const receiver = players.get(targetId);
+      if (!sender || !receiver) return;
 
       io.to(targetId).emit("chat_message", {
-        id: socket.id,
         senderName: sender.name,
         message,
         timestamp: Date.now(),
       });
 
-      // Save to DB
       try {
         await Message.create({
-          senderSocketId: socket.id,
           senderName: sender.name,
-          receiverSocketId: targetId,
+          receiverName: receiver.name,
           message,
         });
       } catch {
@@ -116,12 +114,15 @@ io.on("connection", (socket: Socket) => {
     socket.broadcast.emit("player_action", { id: socket.id, action });
   });
 
-  socket.on("load_chat_history", async ({ partnerId }: { partnerId: string }) => {
+  socket.on("load_chat_history", async ({ partnerName }: { partnerName: string }) => {
+    const me = players.get(socket.id);
+    if (!me) return;
+
     try {
       const msgs = await Message.find({
         $or: [
-          { senderSocketId: socket.id, receiverSocketId: partnerId },
-          { senderSocketId: partnerId, receiverSocketId: socket.id },
+          { senderName: me.name, receiverName: partnerName },
+          { senderName: partnerName, receiverName: me.name },
         ],
       })
         .sort({ timestamp: 1 })
@@ -129,7 +130,6 @@ io.on("connection", (socket: Socket) => {
         .lean();
 
       const formatted = msgs.map((m) => ({
-        id: m.senderSocketId,
         senderName: m.senderName,
         message: m.message,
         timestamp: new Date(m.timestamp).getTime(),

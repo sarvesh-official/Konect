@@ -4,13 +4,13 @@ import type { ChatMessage } from "../types";
 type Props = {
   partnerName: string;
   messages: ChatMessage[];
-  selfId: string;
+  selfName: string;
   onSend: (message: string) => void;
   onClose: () => void;
   onFocusChange: (focused: boolean) => void;
 };
 
-export default function ChatSidebar({ partnerName, messages, selfId, onSend, onClose, onFocusChange }: Props) {
+export default function ChatSidebar({ partnerName, messages, selfName, onSend, onClose, onFocusChange }: Props) {
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -46,7 +46,7 @@ export default function ChatSidebar({ partnerName, messages, selfId, onSend, onC
           <p className="mt-8 text-center text-sm text-slate-steel">Say hello!</p>
         )}
         {messages.map((msg, i) => {
-          const isSelf = msg.id === selfId;
+          const isSelf = msg.senderName === selfName;
           return (
             <div key={i} className={`flex flex-col ${isSelf ? "items-end" : "items-start"}`}>
               <span className="mb-0.5 text-[10px] text-slate-steel">{msg.senderName}</span>

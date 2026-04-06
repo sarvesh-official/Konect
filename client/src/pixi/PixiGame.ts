@@ -4,6 +4,7 @@ import { World } from "./World";
 import { socket } from "../socket";
 import { loadAllVariants, type CharacterFrames } from "./SpriteLoader";
 import { collidesWithObject, findNearbySeat, type ObjectDef } from "./WorldObjects";
+import { Dog } from "./Dog";
 import type { NearbyPlayer, PlayerState } from "../types";
 
 const MAP_X = 20;
@@ -34,6 +35,7 @@ export class PixiGame {
   private wasSeatNearby = false;
   private camScale = 1;
   private lastSeat: ObjectDef | null = null;
+  private dog: Dog | null = null;
 
   constructor(private callbacks: Callbacks) {}
 
@@ -138,6 +140,10 @@ export class PixiGame {
     app.stage.addChild(wc);
 
     new World(MAP_X, MAP_Y, AREA_W, AREA_H).addToStage(wc);
+
+    // Office dog
+    this.dog = new Dog(MAP_X, MAP_Y, AREA_W, AREA_H);
+    this.dog.addToStage(wc);
 
     // Recalc on resize
     const onResize = () => {
@@ -290,6 +296,9 @@ export class PixiGame {
       }
 
       this.players.forEach((p) => p.update());
+
+      // Update dog
+      this.dog?.update(me.x, me.y);
 
       // Camera follow
       this.updateCamera();

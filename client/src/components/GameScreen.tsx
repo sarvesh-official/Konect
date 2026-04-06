@@ -52,10 +52,9 @@ export default function GameScreen({ name, variant }: Props) {
 
     socket.on("chat_message", (msg: ChatMessage) => {
       const history = chatHistory.current;
-      const existing = history.get(msg.id) ?? [];
+      const existing = history.get(msg.senderName) ?? [];
       existing.push(msg);
-      history.set(msg.id, existing);
-      // Update visible messages if chatting with this sender
+      history.set(msg.senderName, existing);
       setMessages((prev) => [...prev, msg]);
     });
 
@@ -75,18 +74,17 @@ export default function GameScreen({ name, variant }: Props) {
     if (!nearbyPlayer) return;
     setConnectedPlayer(nearbyPlayer);
     setNearbyPlayer(null);
-    // Restore any previous messages with this player
-    const prev = chatHistory.current.get(nearbyPlayer.id) ?? [];
+    // Restore any previous messages with this player (keyed by name)
+    const prev = chatHistory.current.get(nearbyPlayer.name) ?? [];
     setMessages([...prev]);
-    // Ask server for DB history
-    socket.emit("load_chat_history", { partnerId: nearbyPlayer.id });
+    socket.emit("load_chat_history", { partnerName: nearbyPlayer.name });
   };
 
   const handleIgnore = () => { if (nearbyPlayer) { setDismissed(nearbyPlayer.id); setNearbyPlayer(null); } };
 
   const handleDisconnect = () => {
     if (connectedPlayer) {
-      chatHistory.current.set(connectedPlayer.id, [...messages]);
+      chatHistory.current.set(connectedPlayer.name, [...messages]);
       saveHistory();
     }
     setConnectedPlayer(null);
@@ -96,11 +94,11 @@ export default function GameScreen({ name, variant }: Props) {
   const handleSend = (message: string) => {
     if (!connectedPlayer) return;
     socket.emit("chat_message", { message, targetId: connectedPlayer.id });
-    const msg: ChatMessage = { id: socket.id!, senderName: name, message, timestamp: Date.now() };
+    const msg: ChatMessage = { senderName: name, message, timestamp: Date.now() };
     const history = chatHistory.current;
-    const existing = history.get(connectedPlayer.id) ?? [];
+    const existing = history.get(connectedPlayer.name) ?? [];
     existing.push(msg);
-    history.set(connectedPlayer.id, existing);
+    history.set(connectedPlayer.name, existing);
     saveHistory();
     setMessages((prev) => [...prev, msg]);
   };
@@ -116,7 +114,7 @@ export default function GameScreen({ name, variant }: Props) {
 
       {/* Top bar */}
       <div className="pointer-events-none fixed left-0 top-0 z-10 flex w-full items-center justify-between px-4 py-2 sm:px-5 sm:py-3">
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1 sm:gap-2">
           <img src="/favicon.svg" alt="" className="h-6 w-6 sm:h-8 sm:w-8" />
           <span className="text-xs font-bold tracking-widest text-snow/70 sm:text-sm" style={{ fontFamily: "Rajdhani, sans-serif" }}>ONECT</span>
         </div>
@@ -232,7 +230,7 @@ export default function GameScreen({ name, variant }: Props) {
         <ChatSidebar
           partnerName={connectedPlayer.name}
           messages={messages}
-          selfId={socket.id!}
+          selfName={name}
           onSend={handleSend}
           onClose={handleDisconnect}
           onFocusChange={(focused) => gameRef.current?.setChatFocused(focused)}
