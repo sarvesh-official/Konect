@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { VARIANT_META, generatePreview } from "../pixi/SpriteLoader";
+import MusicPlayer from "./MusicPlayer";
 
 type Props = {
   onJoin: (name: string, variant: number) => void;
@@ -74,6 +75,7 @@ export default function JoinScreen({ onJoin }: Props) {
   return (
     <div className="relative flex h-screen items-center justify-center overflow-hidden">
       <MatrixRain />
+      <MusicPlayer />
 
       <form
         onSubmit={handleSubmit}
