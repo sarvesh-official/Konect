@@ -26,9 +26,9 @@ export default function ChatSidebar({ partnerName, messages, selfName, onSend, o
   };
 
   return (
-    <div className="fixed right-0 top-0 z-40 flex h-screen w-full flex-col border-l border-charcoal bg-carbon sm:w-80">
+    <div className="fixed inset-0 z-40 flex h-[100dvh] w-full flex-col border-l border-charcoal bg-carbon sm:left-auto sm:w-80">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-charcoal px-4 py-3">
+      <div className="flex items-center justify-between border-b border-charcoal px-3 py-3 sm:px-4">
         <span className="text-sm text-parchment">
           Chat with <strong className="text-emerald-signal">{partnerName}</strong>
         </span>
@@ -41,7 +41,8 @@ export default function ChatSidebar({ partnerName, messages, selfName, onSend, o
       </div>
 
       {/* Messages */}
-      <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3 sm:px-4">
+        <div className="flex flex-col gap-2">
         {messages.length === 0 && (
           <p className="mt-8 text-center text-sm text-slate-steel">Say hello!</p>
         )}
@@ -63,10 +64,14 @@ export default function ChatSidebar({ partnerName, messages, selfName, onSend, o
           );
         })}
         <div ref={bottomRef} />
+        </div>
       </div>
 
       {/* Input */}
-      <div className="flex gap-2 border-t border-charcoal p-3">
+      <div
+        className="sticky bottom-0 flex gap-2 border-t border-charcoal bg-carbon px-3 pt-2.5 sm:px-3 sm:py-3"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)" }}
+      >
         <input
           type="text"
           placeholder="Type a message..."
@@ -80,7 +85,7 @@ export default function ChatSidebar({ partnerName, messages, selfName, onSend, o
         />
         <button
           onClick={handleSend}
-          className="cursor-pointer rounded-md border border-mint bg-carbon px-4 py-2 text-sm font-semibold text-mint transition hover:bg-emerald-signal/10"
+          className="cursor-pointer rounded-md border border-mint bg-carbon px-3 py-2 text-sm font-semibold text-mint transition hover:bg-emerald-signal/10 sm:px-4"
         >
           Send
         </button>

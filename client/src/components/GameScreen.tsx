@@ -164,7 +164,7 @@ export default function GameScreen({ name, variant }: Props) {
       </div>
 
       {/* Action buttons */}
-      <div className="fixed bottom-20 left-1/2 z-20 flex -translate-x-1/2 gap-2 sm:bottom-4">
+      <div className={`fixed bottom-20 left-1/2 z-20 flex -translate-x-1/2 gap-2 sm:bottom-4 ${connectedPlayer ? "hidden sm:flex" : ""}`}>
         {(canSit || isSitting) && (
           <button
             onClick={handleSit}
@@ -184,7 +184,7 @@ export default function GameScreen({ name, variant }: Props) {
       </div>
 
       {/* Mobile D-Pad */}
-      <div className="fixed bottom-4 left-4 z-20 sm:hidden">
+      <div className={`fixed bottom-4 left-4 z-20 sm:hidden ${connectedPlayer ? "hidden" : ""}`}>
         <div className="flex flex-col items-center gap-1">
           <button
             onTouchStart={() => dpad("w", true)}
@@ -220,7 +220,7 @@ export default function GameScreen({ name, variant }: Props) {
       </div>
 
       {/* Mobile sprint button */}
-      <div className="fixed bottom-4 right-4 z-20 sm:hidden">
+      <div className={`fixed bottom-4 right-4 z-20 sm:hidden ${connectedPlayer ? "hidden" : ""}`}>
         <button
           onTouchStart={() => dpad("shift", true)}
           onTouchEnd={() => dpad("shift", false)}
