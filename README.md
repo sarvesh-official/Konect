@@ -1,10 +1,10 @@
-# Konect
+
+![Konect](client/public/logo.svg)
 
 A real-time multiplayer virtual space where players walk around an office environment, bump into each other, and start conversations — kind of like what would happen if you shrunk a coworking space into a browser tab.
 
 **Live:** [client-rho-five-84.vercel.app](https://client-rho-five-84.vercel.app)
 
-![Konect](client/public/logo.svg)
 
 ## What is this?
 
