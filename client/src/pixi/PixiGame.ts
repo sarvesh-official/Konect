@@ -20,6 +20,7 @@ type Callbacks = {
   onLeaveProximity: () => void;
   onPlayersChanged: (players: OnlinePlayer[]) => void;
   onSeatNearby: (canSit: boolean) => void;
+  onDogNearby: (near: boolean) => void;
 };
 
 export class PixiGame {
@@ -36,11 +37,19 @@ export class PixiGame {
   private camScale = 1;
   private lastSeat: ObjectDef | null = null;
   private dog: Dog | null = null;
+  private wasDogNearby = false;
 
   constructor(private callbacks: Callbacks) {}
 
   setChatFocused(focused: boolean) { this.chatFocused = focused; }
   setKey(key: string, down: boolean) { this.keys[key] = down; }
+
+  petDog() {
+    if (!this.selfId || !this.dog) return;
+    const me = this.players.get(this.selfId);
+    if (!me) return;
+    if (this.dog.isNear(me.x, me.y)) this.dog.pet();
+  }
 
   toggleSit() {
     if (!this.selfId) return;
@@ -231,6 +240,7 @@ export class PixiGame {
     const k = e.key.toLowerCase();
     this.keys[k] = true;
     if (k === "e") this.toggleSit();
+    if (k === "f") this.petDog();
   };
 
   private onKeyUp = (e: KeyboardEvent) => { this.keys[e.key.toLowerCase()] = false; };
@@ -302,6 +312,15 @@ export class PixiGame {
 
       // Camera follow
       this.updateCamera();
+
+      // Dog proximity
+      if (this.dog) {
+        const dogNear = this.dog.isNear(me.x, me.y);
+        if (dogNear !== this.wasDogNearby) {
+          this.wasDogNearby = dogNear;
+          this.callbacks.onDogNearby(dogNear);
+        }
+      }
 
       // Seat proximity
       const seatNearby = !!findNearbySeat(me.x, me.y, SEAT_RANGE);

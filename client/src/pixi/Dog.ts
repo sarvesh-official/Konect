@@ -1,8 +1,9 @@
-import { Container, Graphics, Text } from "pixi.js";
+import { AnimatedSprite, Container, Graphics, Text, Texture } from "pixi.js";
 
-const BODY_COLOR = 0xc4813d;
-const EAR_COLOR = 0x8b5e2a;
-const NOSE_COLOR = 0x2a1a0a;
+const FRAME_COUNT = 19;
+const WALK_SPEED = 0.4;
+const FOLLOW_SPEED = 0.7;
+const SCALE = 0.3;
 
 export class Dog {
   x: number;
@@ -10,107 +11,69 @@ export class Dog {
   private mapX: number;
   private mapY: number;
   private container: Container;
-  private bodyGroup: Container;
-  private bobPhase = 0;
+  private sprite: AnimatedSprite | null = null;
+  private shadow: Graphics;
+  private heartContainer: Container;
+  private heartTimer = 0;
 
-  // AI movement
+  // AI
   private targetX: number;
   private targetY: number;
-  private speed = 0.8;
+  private speed = WALK_SPEED;
   private pauseTimer = 0;
   private areaW: number;
   private areaH: number;
+  private isBeingPet = false;
+  private petTimer = 0;
 
   constructor(mapX: number, mapY: number, areaW: number, areaH: number) {
     this.mapX = mapX;
     this.mapY = mapY;
     this.areaW = areaW;
     this.areaH = areaH;
-    this.x = 200 + Math.random() * 400;
-    this.y = 200 + Math.random() * 300;
+    this.x = 300 + Math.random() * 300;
+    this.y = 200 + Math.random() * 200;
     this.targetX = this.x;
     this.targetY = this.y;
 
     this.container = new Container();
-    this.bodyGroup = new Container();
 
     // Shadow
-    const shadow = new Graphics();
-    shadow.ellipse(0, 8, 10, 4);
-    shadow.fill({ color: 0x000000, alpha: 0.3 });
-    this.bodyGroup.addChild(shadow);
+    this.shadow = new Graphics();
+    this.shadow.ellipse(0, 12, 14, 5);
+    this.shadow.fill({ color: 0x000000, alpha: 0.25 });
+    this.container.addChild(this.shadow);
 
-    // Body (oval)
-    const body = new Graphics();
-    body.ellipse(0, 0, 10, 7);
-    body.fill(BODY_COLOR);
-    body.ellipse(0, 0, 10, 7);
-    body.stroke({ width: 1, color: EAR_COLOR, alpha: 0.5 });
-    this.bodyGroup.addChild(body);
+    // Heart reaction container (hidden by default)
+    this.heartContainer = new Container();
+    this.heartContainer.visible = false;
+    this.heartContainer.y = -25;
 
-    // Head
-    const head = new Graphics();
-    head.circle(8, -3, 6);
-    head.fill(BODY_COLOR);
-    head.circle(8, -3, 6);
-    head.stroke({ width: 1, color: EAR_COLOR, alpha: 0.4 });
-    this.bodyGroup.addChild(head);
-
-    // Ears
-    const earL = new Graphics();
-    earL.ellipse(5, -9, 3, 4);
-    earL.fill(EAR_COLOR);
-    this.bodyGroup.addChild(earL);
-
-    const earR = new Graphics();
-    earR.ellipse(11, -9, 3, 4);
-    earR.fill(EAR_COLOR);
-    this.bodyGroup.addChild(earR);
-
-    // Eyes
-    const eyeL = new Graphics();
-    eyeL.circle(6, -4, 1.5);
-    eyeL.fill(0xffffff);
-    eyeL.circle(6.5, -4, 0.8);
-    eyeL.fill(0x101010);
-    this.bodyGroup.addChild(eyeL);
-
-    const eyeR = new Graphics();
-    eyeR.circle(10, -4, 1.5);
-    eyeR.fill(0xffffff);
-    eyeR.circle(10.5, -4, 0.8);
-    eyeR.fill(0x101010);
-    this.bodyGroup.addChild(eyeR);
-
-    // Nose
-    const nose = new Graphics();
-    nose.circle(13, -2, 1.5);
-    nose.fill(NOSE_COLOR);
-    this.bodyGroup.addChild(nose);
-
-    // Tail
-    const tail = new Graphics();
-    tail.moveTo(-10, -2);
-    tail.quadraticCurveTo(-16, -10, -12, -14);
-    tail.stroke({ width: 2.5, color: BODY_COLOR });
-    this.bodyGroup.addChild(tail);
-
-    // Name
-    const label = new Text({
-      text: "Buddy",
-      style: {
-        fontSize: 9,
-        fontFamily: "Rajdhani, system-ui, sans-serif",
-        fill: 0xc4813d,
-        fontWeight: "600",
-      },
+    const heart = new Text({
+      text: "\u2764",
+      style: { fontSize: 16, fill: 0xff4466 },
     });
-    label.anchor.set(0.5, 0.5);
-    label.y = -18;
-    this.bodyGroup.addChild(label);
+    heart.anchor.set(0.5, 0.5);
+    this.heartContainer.addChild(heart);
+    this.container.addChild(this.heartContainer);
 
-    this.container.addChild(this.bodyGroup);
+    this.loadSprites();
     this.setPosition(this.x, this.y);
+  }
+
+  private async loadSprites() {
+    const textures: Texture[] = [];
+    for (let i = 0; i < FRAME_COUNT; i++) {
+      const idx = String(i).padStart(4, "0");
+      textures.push(Texture.from(`/sprites/dog/doggo_${idx}.png`));
+    }
+
+    this.sprite = new AnimatedSprite(textures);
+    this.sprite.anchor.set(0.5, 0.6);
+    this.sprite.scale.set(SCALE);
+    this.sprite.animationSpeed = 0.08;
+    this.sprite.play();
+    this.container.addChildAt(this.sprite, 1); // After shadow, before heart
   }
 
   private pickNewTarget() {
@@ -119,27 +82,64 @@ export class Dog {
     this.pauseTimer = 0;
   }
 
+  /** Call this when the player presses the pet key nearby */
+  pet() {
+    this.isBeingPet = true;
+    this.petTimer = 120; // 2 seconds
+    this.heartContainer.visible = true;
+    this.heartTimer = 90; // 1.5 seconds
+    if (this.sprite) {
+      this.sprite.stop();
+      this.sprite.currentFrame = 0;
+    }
+  }
+
+  /** Is the player close enough to interact? */
+  isNear(px: number, py: number): boolean {
+    const dx = px - this.x;
+    const dy = py - this.y;
+    return Math.sqrt(dx * dx + dy * dy) < 50;
+  }
+
   update(playerX?: number, playerY?: number) {
-    // If a player is nearby, follow them
+    // Heart animation
+    if (this.heartTimer > 0) {
+      this.heartTimer--;
+      this.heartContainer.visible = true;
+      this.heartContainer.y = -25 - (90 - this.heartTimer) * 0.15;
+      this.heartContainer.alpha = this.heartTimer / 90;
+    } else {
+      this.heartContainer.visible = false;
+    }
+
+    // Being pet - stay still
+    if (this.isBeingPet) {
+      this.petTimer--;
+      if (this.petTimer <= 0) this.isBeingPet = false;
+      return;
+    }
+
+    // Follow nearby player
     if (playerX !== undefined && playerY !== undefined) {
       const dx = playerX - this.x;
       const dy = playerY - this.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 120 && dist > 30) {
+      if (dist < 150 && dist > 40) {
         this.targetX = playerX;
         this.targetY = playerY;
-        this.speed = 1.2;
+        this.speed = FOLLOW_SPEED;
       } else {
-        this.speed = 0.8;
+        this.speed = WALK_SPEED;
       }
     }
 
-    // Pause occasionally (dog sniffing around)
+    // Pause (sniffing)
     if (this.pauseTimer > 0) {
-      this.pauseTimer -= 1;
-      // Gentle idle bob
-      this.bobPhase += 0.02;
-      this.bodyGroup.y = Math.sin(this.bobPhase) * 0.5;
+      this.pauseTimer--;
+      if (this.sprite && this.sprite.playing) {
+        this.sprite.stop();
+        this.sprite.currentFrame = 0;
+      }
       return;
     }
 
@@ -148,24 +148,22 @@ export class Dog {
     const dist = Math.sqrt(dx * dx + dy * dy);
 
     if (dist < 5) {
-      // Reached target — pause then pick new one
-      this.pauseTimer = 60 + Math.random() * 120; // 1-3 seconds at 60fps
+      this.pauseTimer = 90 + Math.random() * 180;
       this.pickNewTarget();
       return;
     }
 
-    // Move toward target
+    // Move
     const nx = dx / dist;
     const ny = dy / dist;
     this.x += nx * this.speed;
     this.y += ny * this.speed;
 
-    // Flip direction
-    this.bodyGroup.scale.x = nx < 0 ? -1 : 1;
-
-    // Walk bob
-    this.bobPhase += 0.15;
-    this.bodyGroup.y = Math.sin(this.bobPhase) * 2;
+    // Flip sprite direction
+    if (this.sprite) {
+      this.sprite.scale.x = nx < 0 ? -SCALE : SCALE;
+      if (!this.sprite.playing) this.sprite.play();
+    }
 
     this.setPosition(this.x, this.y);
   }

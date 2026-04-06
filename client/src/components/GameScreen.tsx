@@ -25,6 +25,7 @@ export default function GameScreen({ name, variant }: Props) {
   const [onlinePlayers, setOnlinePlayers] = useState<OnlinePlayer[]>([]);
   const [canSit, setCanSit] = useState(false);
   const [isSitting, setIsSitting] = useState(false);
+  const [dogNearby, setDogNearby] = useState(false);
 
   // Per-player message history — loaded from localStorage, survives refresh
   const chatHistory = useRef<Map<string, ChatMessage[]>>(loadChatHistory(name));
@@ -43,10 +44,11 @@ export default function GameScreen({ name, variant }: Props) {
   const onLeaveProximity = useCallback(() => { setNearbyPlayer(null); setDismissed(null); }, []);
   const onPlayersChanged = useCallback((p: OnlinePlayer[]) => setOnlinePlayers(p), []);
   const onSeatNearby = useCallback((v: boolean) => setCanSit(v), []);
+  const onDogNearby = useCallback((v: boolean) => setDogNearby(v), []);
 
   useEffect(() => {
     if (!containerRef.current) return;
-    const game = new PixiGame({ onNearby, onLeaveProximity, onPlayersChanged, onSeatNearby });
+    const game = new PixiGame({ onNearby, onLeaveProximity, onPlayersChanged, onSeatNearby, onDogNearby });
     gameRef.current = game;
     game.mount(containerRef.current, name, variant);
 
@@ -63,7 +65,7 @@ export default function GameScreen({ name, variant }: Props) {
     });
 
     return () => { socket.off("chat_message"); socket.off("chat_history"); game.destroy(); };
-  }, [name, variant, onNearby, onLeaveProximity, onPlayersChanged, onSeatNearby]);
+  }, [name, variant, onNearby, onLeaveProximity, onPlayersChanged, onSeatNearby, onDogNearby]);
 
   const handleSit = () => {
     gameRef.current?.toggleSit();
@@ -156,19 +158,30 @@ export default function GameScreen({ name, variant }: Props) {
             <span>Move</span>
             <span><kbd className="rounded border border-charcoal bg-abyss px-1 text-parchment">Shift</kbd> Sprint</span>
             <span><kbd className="rounded border border-charcoal bg-abyss px-1 text-parchment">E</kbd> Sit/Stand</span>
+            <span><kbd className="rounded border border-charcoal bg-abyss px-1 text-parchment">F</kbd> Pet dog</span>
           </div>
         </div>
       </div>
 
-      {/* Sit button (shown when near a seat) */}
-      {(canSit || isSitting) && (
-        <button
-          onClick={handleSit}
-          className="fixed bottom-20 left-1/2 z-20 -translate-x-1/2 cursor-pointer rounded-full border border-emerald-signal/40 bg-carbon/90 px-5 py-2 text-xs font-semibold text-emerald-signal backdrop-blur transition hover:bg-emerald-signal/10 sm:bottom-4 sm:left-1/2"
-        >
-          {isSitting ? "Stand up" : "Sit down"} <span className="hidden text-slate-steel sm:inline">(E)</span>
-        </button>
-      )}
+      {/* Action buttons */}
+      <div className="fixed bottom-20 left-1/2 z-20 flex -translate-x-1/2 gap-2 sm:bottom-4">
+        {(canSit || isSitting) && (
+          <button
+            onClick={handleSit}
+            className="rounded-full border border-emerald-signal/40 bg-carbon/90 px-5 py-2 text-xs font-semibold text-emerald-signal backdrop-blur transition hover:bg-emerald-signal/10"
+          >
+            {isSitting ? "Stand up" : "Sit down"} <span className="hidden text-slate-steel sm:inline">(E)</span>
+          </button>
+        )}
+        {dogNearby && (
+          <button
+            onClick={() => gameRef.current?.petDog()}
+            className="rounded-full border border-amber-400/40 bg-carbon/90 px-5 py-2 text-xs font-semibold text-amber-400 backdrop-blur transition hover:bg-amber-400/10"
+          >
+            Pet dog <span className="hidden text-slate-steel sm:inline">(F)</span>
+          </button>
+        )}
+      </div>
 
       {/* Mobile D-Pad */}
       <div className="fixed bottom-4 left-4 z-20 sm:hidden">
