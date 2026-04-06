@@ -44,7 +44,7 @@ export default function MusicPlayer() {
   return (
     <button
       onClick={toggle}
-      className="fixed bottom-3 right-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-charcoal bg-carbon/90 backdrop-blur transition hover:bg-emerald-signal/10 sm:bottom-4 sm:right-4"
+      className="fixed bottom-3 right-3 bg-transparent z-20 flex h-10 w-10 items-center justify-center rounded-full border border-charcoal transition sm:bottom-4 sm:right-4"
       title={playing ? "Mute" : "Play music"}
     >
       {playing ? (

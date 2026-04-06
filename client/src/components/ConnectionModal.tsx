@@ -11,7 +11,7 @@ export default function ConnectionModal({ playerName, onAccept, onIgnore }: Prop
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-signal/10 text-lg text-emerald-signal">
           &#9889;
         </div>
-        <h3 className="text-lg font-bold text-snow">Player nearby!</h3>
+        <h3 className="text-lg font-bold text-snow" style={{ fontFamily: "Rajdhani, sans-serif" }}>Player nearby!</h3>
         <p className="text-sm text-parchment">
           <strong className="text-snow">{playerName}</strong> is in your proximity.
           Connect and chat?

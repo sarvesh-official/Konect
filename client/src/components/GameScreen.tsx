@@ -118,7 +118,7 @@ export default function GameScreen({ name, variant }: Props) {
       <div className="pointer-events-none fixed left-0 top-0 z-10 flex w-full items-center justify-between px-4 py-2 sm:px-5 sm:py-3">
         <div className="flex items-center gap-2 sm:gap-3">
           <img src="/favicon.svg" alt="" className="h-6 w-6 sm:h-8 sm:w-8" />
-          <span className="text-xs font-bold tracking-widest text-snow/70 sm:text-sm">ONECT</span>
+          <span className="text-xs font-bold tracking-widest text-snow/70 sm:text-sm" style={{ fontFamily: "Rajdhani, sans-serif" }}>ONECT</span>
         </div>
         <div className="flex items-center gap-2 rounded-full border border-charcoal bg-carbon/80 px-2.5 py-1 backdrop-blur sm:px-3 sm:py-1.5">
           <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-signal" />
@@ -129,7 +129,7 @@ export default function GameScreen({ name, variant }: Props) {
       {/* Online players panel (hidden on mobile when chat open) */}
       <div className={`pointer-events-none fixed right-3 top-12 z-10 w-40 sm:right-4 sm:top-14 sm:w-48 ${connectedPlayer ? "hidden sm:block" : ""}`}>
         <div className="rounded-lg border border-charcoal bg-carbon/80 p-2.5 backdrop-blur sm:p-3">
-          <h4 className="mb-1.5 text-[9px] font-semibold uppercase tracking-[2px] text-slate-steel sm:mb-2 sm:text-[10px]">Players</h4>
+          <h4 className="mb-1.5 text-[9px] font-semibold uppercase tracking-[2px] text-slate-steel sm:mb-2 sm:text-[10px]" style={{ fontFamily: "Rajdhani, sans-serif" }}>Players</h4>
           <div className="flex flex-col gap-1">
             {onlinePlayers.map((p) => (
               <div key={p.id} className="flex items-center gap-1.5">

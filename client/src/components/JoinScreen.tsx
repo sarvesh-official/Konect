@@ -5,7 +5,6 @@ type Props = {
   onJoin: (name: string, variant: number) => void;
 };
 
-/** Canvas-based matrix rain background */
 function MatrixRain() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -33,21 +32,15 @@ function MatrixRain() {
         const ch = chars[Math.floor(Math.random() * chars.length)];
         const x = i * fontSize;
         const y = drops[i] * fontSize;
-
-        // Vary opacity for depth
         ctx.globalAlpha = 0.15 + Math.random() * 0.15;
         ctx.fillText(ch, x, y);
-
-        if (y > h && Math.random() > 0.975) {
-          drops[i] = 0;
-        }
+        if (y > h && Math.random() > 0.975) drops[i] = 0;
         drops[i] += 0.5 + Math.random() * 0.5;
       }
       ctx.globalAlpha = 1;
     };
 
     const interval = setInterval(draw, 50);
-
     const onResize = () => {
       w = canvas.width = window.innerWidth;
       h = canvas.height = window.innerHeight;
@@ -55,20 +48,13 @@ function MatrixRain() {
       drops = Array.from({ length: columns }, () => Math.random() * -50);
     };
     window.addEventListener("resize", onResize);
-
     return () => {
       clearInterval(interval);
       window.removeEventListener("resize", onResize);
     };
   }, []);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      className="fixed inset-0 -z-10"
-      style={{ background: "#050507" }}
-    />
-  );
+  return <canvas ref={canvasRef} className="fixed inset-0 -z-10" style={{ background: "#050507" }} />;
 }
 
 export default function JoinScreen({ onJoin }: Props) {
@@ -91,14 +77,20 @@ export default function JoinScreen({ onJoin }: Props) {
 
       <form
         onSubmit={handleSubmit}
-        className="z-10 flex w-[340px] flex-col items-center gap-4 rounded-lg border border-charcoal bg-carbon/95 p-6 backdrop-blur sm:w-[380px] sm:gap-5 sm:p-8"
+        className="z-10 flex w-[340px] flex-col items-center gap-4 rounded-xl border border-emerald-signal/20 bg-abyss/60 p-6 shadow-[0_0_60px_rgba(0,217,146,0.06)] backdrop-blur-xl sm:w-[400px] sm:gap-5 sm:p-8"
       >
+        {/* Logo */}
         <img src="/logo.svg" alt="Konect" className="h-10 sm:h-12" />
-        <p className="text-center text-xs text-parchment sm:text-sm">
-          Choose your character and enter the office
+
+        {/* Subtitle */}
+        <p
+          className="text-center text-xs tracking-wider text-emerald-signal/60 uppercase sm:text-sm"
+          style={{ fontFamily: "Rajdhani, sans-serif", fontWeight: 500 }}
+        >
+          Choose your character
         </p>
 
-        {/* Character picker — 2×2 grid on small screens */}
+        {/* Character picker */}
         <div className="grid w-full grid-cols-4 gap-1.5 sm:gap-2">
           {VARIANT_META.map((meta, i) => (
             <button
@@ -107,8 +99,8 @@ export default function JoinScreen({ onJoin }: Props) {
               onClick={() => setVariant(i)}
               className={`flex flex-col items-center gap-1 rounded-lg border p-1.5 transition sm:p-2 ${
                 variant === i
-                  ? "border-emerald-signal bg-emerald-signal/10"
-                  : "border-charcoal bg-abyss hover:border-parchment/30"
+                  ? "border-emerald-signal bg-emerald-signal/10 shadow-[0_0_12px_rgba(0,217,146,0.15)]"
+                  : "border-white/5 bg-white/[0.03] hover:border-emerald-signal/30 hover:bg-white/[0.05]"
               }`}
             >
               {previews[i] ? (
@@ -123,29 +115,45 @@ export default function JoinScreen({ onJoin }: Props) {
                   ...
                 </div>
               )}
-              <span className="text-center text-[8px] leading-tight text-parchment sm:text-[9px]">
+              <span
+                className="text-center text-[8px] leading-tight text-parchment/70 sm:text-[9px]"
+                style={{ fontFamily: "Rajdhani, sans-serif" }}
+              >
                 {meta.label}
               </span>
             </button>
           ))}
         </div>
 
+        {/* Name input */}
         <input
           type="text"
-          placeholder="Your name"
+          placeholder="Enter your name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           maxLength={20}
           autoFocus
-          className="w-full rounded-md border border-charcoal bg-abyss px-4 py-2.5 text-sm text-snow placeholder-slate-steel outline-none transition focus:border-emerald-signal"
+          className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm tracking-wide text-snow placeholder-white/20 outline-none transition focus:border-emerald-signal/50 focus:bg-white/[0.06] focus:shadow-[0_0_20px_rgba(0,217,146,0.08)]"
+          style={{ fontFamily: "Space Grotesk, sans-serif" }}
         />
+
+        {/* Join button */}
         <button
           type="submit"
           disabled={!name.trim()}
-          className="w-full rounded-md border border-mint bg-carbon py-2.5 text-sm font-semibold text-mint transition hover:bg-emerald-signal/10 disabled:opacity-30"
+          className="w-full rounded-lg border border-emerald-signal/40 bg-emerald-signal/10 py-2.5 text-sm font-semibold uppercase tracking-[3px] text-emerald-signal transition hover:border-emerald-signal/60 hover:bg-emerald-signal/20 hover:shadow-[0_0_20px_rgba(0,217,146,0.15)] disabled:opacity-20"
+          style={{ fontFamily: "Rajdhani, sans-serif", fontWeight: 700 }}
         >
-          Join Game
+          Enter the Office
         </button>
+
+        {/* Footer */}
+        <p
+          className="text-[10px] tracking-widest text-white/15 uppercase"
+          style={{ fontFamily: "Space Mono, monospace" }}
+        >
+          proximity-based connections
+        </p>
       </form>
     </div>
   );

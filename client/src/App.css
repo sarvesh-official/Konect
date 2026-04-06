@@ -12,6 +12,11 @@
   --color-slate-steel: #8b949e;
   --color-danger: #fb565b;
   --color-purple-soft: #818cf8;
+
+  /* Fonts */
+  --font-heading: "Rajdhani", system-ui, sans-serif;
+  --font-body: "Space Grotesk", system-ui, sans-serif;
+  --font-mono: "Space Mono", "JetBrains Mono", monospace;
 }
 
 body {
@@ -19,17 +24,13 @@ body {
   padding: 0;
   background-color: #050507;
   color: #f2f2f2;
-  font-family: Inter, system-ui, -apple-system, sans-serif;
-  cursor: url("/cursor-default.svg") 4 2, auto;
+  font-family: "Space Grotesk", system-ui, -apple-system, sans-serif;
+  cursor: url("/cursor-default.svg") 2 1, auto;
 }
 
-a, button, [role="button"], input[type="submit"], select, label[for] {
-  cursor: url("/cursor-pointer.svg") 9 2, pointer;
-}
-
-/* Pixi canvas fills available space */
-.game-canvas canvas {
-  display: block;
+/* Headings use Rajdhani */
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Rajdhani", system-ui, sans-serif;
 }
 
 /* Force custom cursors everywhere */
@@ -48,4 +49,9 @@ button:disabled {
 
 input, textarea {
   cursor: url("/cursor-default.svg") 2 1, text;
+}
+
+/* Pixi canvas fills available space */
+.game-canvas canvas {
+  display: block;
 }
