@@ -1,30 +1,164 @@
-import express from "express"
-import { createServer } from "node:http"
+import express from "express";
+import { createServer } from "node:http";
 import { Server, Socket } from "socket.io";
-import {configDotenv} from "dotenv"
+import { configDotenv } from "dotenv";
+import { connectDB } from "./db";
+import { User } from "./models/User";
+import { Message } from "./models/Message";
 
-configDotenv()
+configDotenv();
 
-const port = process.env.PORT || 5000
+const port = process.env.PORT || 5000;
 
 const app = express();
-app.use(express.json())
+app.use(express.json());
+
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok" });
+});
 
 const httpServer = createServer(app);
+const allowedOrigins = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(",")
+  : ["http://localhost:8080", "http://localhost:5173"];
+
 const io = new Server(httpServer, {
-    cors: {
-        origin : "*",
-        methods: ['GET','POST','PUT','PATCH','DELETE']
-    }
-})
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+  },
+});
+
+type PlayerState = {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+};
+
+const players = new Map<string, PlayerState>();
 
 io.on("connection", (socket: Socket) => {
-    console.log("User connected: ", socket.id);
+  console.log("User connected:", socket.id);
 
-    socket.on("disconnect", () => {
-        console.log("user disconnected")
-    })
+  socket.on("join", async ({ name }: { name: string }) => {
+    const spawnX = 100 + Math.random() * 700;
+    const spawnY = 100 + Math.random() * 400;
 
-})
+    const player: PlayerState = {
+      id: socket.id,
+      name,
+      x: spawnX,
+      y: spawnY,
+    };
 
-httpServer.listen(port, () => console.log(`Server started on port ${port}`))
+    players.set(socket.id, player);
+
+    // Send all current players to the new player
+    socket.emit("current_players", {
+      selfId: socket.id,
+      players: Array.from(players.values()),
+    });
+
+    // Notify everyone else
+    socket.broadcast.emit("player_joined", player);
+
+    // Save to DB
+    try {
+      await User.create({ socketId: socket.id, name, x: spawnX, y: spawnY });
+    } catch {
+      // DB might not be connected
+    }
+  });
+
+  socket.on("player_move", ({ x, y }: { x: number; y: number }) => {
+    const player = players.get(socket.id);
+    if (!player) return;
+
+    player.x = x;
+    player.y = y;
+
+    socket.broadcast.emit("player_moved", { id: socket.id, x, y });
+  });
+
+  socket.on(
+    "chat_message",
+    async ({ message, targetId }: { message: string; targetId: string }) => {
+      if (!targetId) return;
+
+      const sender = players.get(socket.id);
+      if (!sender) return;
+
+      io.to(targetId).emit("chat_message", {
+        id: socket.id,
+        senderName: sender.name,
+        message,
+        timestamp: Date.now(),
+      });
+
+      // Save to DB
+      try {
+        await Message.create({
+          senderSocketId: socket.id,
+          senderName: sender.name,
+          receiverSocketId: targetId,
+          message,
+        });
+      } catch {
+        // DB might not be connected
+      }
+    },
+  );
+
+  socket.on("player_action", ({ action }: { action: string }) => {
+    socket.broadcast.emit("player_action", { id: socket.id, action });
+  });
+
+  socket.on("load_chat_history", async ({ partnerId }: { partnerId: string }) => {
+    try {
+      const msgs = await Message.find({
+        $or: [
+          { senderSocketId: socket.id, receiverSocketId: partnerId },
+          { senderSocketId: partnerId, receiverSocketId: socket.id },
+        ],
+      })
+        .sort({ timestamp: 1 })
+        .limit(100)
+        .lean();
+
+      const formatted = msgs.map((m) => ({
+        id: m.senderSocketId,
+        senderName: m.senderName,
+        message: m.message,
+        timestamp: new Date(m.timestamp).getTime(),
+      }));
+
+      socket.emit("chat_history", formatted);
+    } catch {
+      // DB might not be connected — client will use local cache
+    }
+  });
+
+  socket.on("disconnect", async () => {
+    console.log("User disconnected:", socket.id);
+    players.delete(socket.id);
+    socket.broadcast.emit("player_left", { id: socket.id });
+
+    // Mark disconnected in DB
+    try {
+      await User.updateOne(
+        { socketId: socket.id, disconnectedAt: null },
+        { disconnectedAt: new Date() },
+      );
+    } catch {
+      // DB might not be connected
+    }
+  });
+});
+
+async function start() {
+  await connectDB();
+  httpServer.listen(port, () => console.log(`Server started on port ${port}`));
+}
+
+start();

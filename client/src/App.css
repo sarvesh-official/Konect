@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+@theme {
+  /* VoltAgent Color Palette */
+  --color-abyss: #050507;
+  --color-carbon: #101010;
+  --color-charcoal: #3d3a39;
+  --color-emerald-signal: #00d992;
+  --color-mint: #2fd6a1;
+  --color-snow: #f2f2f2;
+  --color-parchment: #b8b3b0;
+  --color-slate-steel: #8b949e;
+  --color-danger: #fb565b;
+  --color-purple-soft: #818cf8;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #050507;
+  color: #f2f2f2;
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+}
+
+/* Pixi canvas fills available space */
+.game-canvas canvas {
+  display: block;
+}
