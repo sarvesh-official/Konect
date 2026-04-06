@@ -20,11 +20,11 @@ app.get("/health", (_req, res) => {
 const httpServer = createServer(app);
 const allowedOrigins = process.env.CLIENT_URL
   ? process.env.CLIENT_URL.split(",")
-  : ["http://localhost:8080", "http://localhost:5173"];
+  : null; // null = allow all origins (dev mode)
 
 const io = new Server(httpServer, {
   cors: {
-    origin: allowedOrigins,
+    origin: allowedOrigins ?? "*",
     methods: ["GET", "POST"],
   },
 });
