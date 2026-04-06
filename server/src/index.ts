@@ -32,6 +32,7 @@ const io = new Server(httpServer, {
 type PlayerState = {
   id: string;
   name: string;
+  nameKey: string;
   x: number;
   y: number;
   variant: number;
@@ -39,16 +40,29 @@ type PlayerState = {
 
 const players = new Map<string, PlayerState>();
 
+function normalizeName(name: string): string {
+  return name.trim().toLowerCase();
+}
+
+function makeConversationKey(aName: string, bName: string): string {
+  const a = normalizeName(aName);
+  const b = normalizeName(bName);
+  return a < b ? `${a}::${b}` : `${b}::${a}`;
+}
+
 io.on("connection", (socket: Socket) => {
   console.log("User connected:", socket.id);
 
   socket.on("join", async ({ name, variant = 0 }: { name: string; variant?: number }) => {
+    const cleanedName = name.trim();
+    const nameKey = normalizeName(cleanedName);
     const spawnX = 100 + Math.random() * 700;
     const spawnY = 100 + Math.random() * 400;
 
     const player: PlayerState = {
       id: socket.id,
-      name,
+      name: cleanedName,
+      nameKey,
       x: spawnX,
       y: spawnY,
       variant,
@@ -67,7 +81,7 @@ io.on("connection", (socket: Socket) => {
 
     // Save to DB
     try {
-      await User.create({ socketId: socket.id, name, x: spawnX, y: spawnY });
+      await User.create({ socketId: socket.id, name: cleanedName, x: spawnX, y: spawnY });
     } catch {
       // DB might not be connected
     }
@@ -99,9 +113,18 @@ io.on("connection", (socket: Socket) => {
       });
 
       try {
+        const senderName = sender.name.trim();
+        const receiverName = receiver.name.trim();
+        const senderNameKey = normalizeName(senderName);
+        const receiverNameKey = normalizeName(receiverName);
+        const conversationKey = makeConversationKey(senderName, receiverName);
+
         await Message.create({
-          senderName: sender.name,
-          receiverName: receiver.name,
+          senderName,
+          senderNameKey,
+          receiverName,
+          receiverNameKey,
+          conversationKey,
           message,
         });
       } catch {
@@ -117,12 +140,29 @@ io.on("connection", (socket: Socket) => {
   socket.on("load_chat_history", async ({ partnerName }: { partnerName: string }) => {
     const me = players.get(socket.id);
     if (!me) return;
+    const cleanedPartnerName = partnerName.trim();
+    if (!cleanedPartnerName) {
+      socket.emit("chat_history", []);
+      return;
+    }
 
     try {
+      const conversationKey = makeConversationKey(me.name, cleanedPartnerName);
+      const meKey = me.nameKey;
+      const partnerKey = normalizeName(cleanedPartnerName);
+
       const msgs = await Message.find({
         $or: [
-          { senderName: me.name, receiverName: partnerName },
-          { senderName: partnerName, receiverName: me.name },
+          { conversationKey },
+          // Backward compatibility for old records without conversationKey
+          {
+            $or: [
+              { senderNameKey: meKey, receiverNameKey: partnerKey },
+              { senderNameKey: partnerKey, receiverNameKey: meKey },
+              { senderName: me.name, receiverName: cleanedPartnerName },
+              { senderName: cleanedPartnerName, receiverName: me.name },
+            ],
+          },
         ],
       })
         .sort({ timestamp: 1 })
