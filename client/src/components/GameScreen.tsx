@@ -3,7 +3,6 @@ import { PixiGame, type OnlinePlayer } from "../pixi/PixiGame";
 import { socket } from "../socket";
 import type { ChatMessage, NearbyPlayer } from "../types";
 import ChatSidebar from "./ChatSidebar";
-import ConnectionModal from "./ConnectionModal";
 import MusicPlayer from "./MusicPlayer";
 
 function loadChatHistory(name: string): Map<string, ChatMessage[]> {
@@ -21,7 +20,6 @@ export default function GameScreen({ name, variant }: Props) {
 
   const [nearbyPlayer, setNearbyPlayer] = useState<NearbyPlayer | null>(null);
   const [connectedPlayer, setConnectedPlayer] = useState<NearbyPlayer | null>(null);
-  const [dismissed, setDismissed] = useState<string | null>(null);
   const [onlinePlayers, setOnlinePlayers] = useState<OnlinePlayer[]>([]);
   const [canSit, setCanSit] = useState(false);
   const [isSitting, setIsSitting] = useState(false);
@@ -41,7 +39,7 @@ export default function GameScreen({ name, variant }: Props) {
   };
 
   const onNearby = useCallback((p: NearbyPlayer) => setNearbyPlayer(p), []);
-  const onLeaveProximity = useCallback(() => { setNearbyPlayer(null); setDismissed(null); }, []);
+  const onLeaveProximity = useCallback(() => { setNearbyPlayer(null); }, []);
   const onPlayersChanged = useCallback((p: OnlinePlayer[]) => setOnlinePlayers(p), []);
   const onSeatNearby = useCallback((v: boolean) => setCanSit(v), []);
   const onDogNearby = useCallback((v: boolean) => setDogNearby(v), []);
@@ -82,8 +80,6 @@ export default function GameScreen({ name, variant }: Props) {
     socket.emit("load_chat_history", { partnerName: nearbyPlayer.name });
   };
 
-  const handleIgnore = () => { if (nearbyPlayer) { setDismissed(nearbyPlayer.id); setNearbyPlayer(null); } };
-
   const handleDisconnect = () => {
     if (connectedPlayer) {
       chatHistory.current.set(connectedPlayer.name, [...messages]);
@@ -104,8 +100,7 @@ export default function GameScreen({ name, variant }: Props) {
     saveHistory();
     setMessages((prev) => [...prev, msg]);
   };
-
-  const showModal = nearbyPlayer && !connectedPlayer && nearbyPlayer.id !== dismissed;
+  const canConnectNearby = !!nearbyPlayer && !connectedPlayer;
 
   // Mobile d-pad handlers
   const dpad = (key: string, down: boolean) => gameRef.current?.setKey(key, down);
@@ -181,6 +176,14 @@ export default function GameScreen({ name, variant }: Props) {
             Pet dog <span className="hidden text-slate-steel sm:inline">(F)</span>
           </button>
         )}
+        {canConnectNearby && nearbyPlayer && (
+          <button
+            onClick={handleAccept}
+            className="rounded-full border border-emerald-signal/40 bg-carbon/90 px-5 py-2 text-xs font-semibold text-emerald-signal backdrop-blur transition hover:bg-emerald-signal/10"
+          >
+            Connect with {nearbyPlayer.name}
+          </button>
+        )}
       </div>
 
       {/* Mobile D-Pad */}
@@ -232,11 +235,6 @@ export default function GameScreen({ name, variant }: Props) {
 
       {/* Music toggle */}
       <MusicPlayer />
-
-      {/* Connection modal */}
-      {showModal && (
-        <ConnectionModal playerName={nearbyPlayer.name} onAccept={handleAccept} onIgnore={handleIgnore} />
-      )}
 
       {/* Chat sidebar */}
       {connectedPlayer && (
